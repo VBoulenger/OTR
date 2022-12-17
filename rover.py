@@ -31,6 +31,26 @@ class Rover:
 
     def move(self, speed, rotation):
         """Move the rover with given speed and rotation"""
+        next_pos = Position(self.position.x, self.position.y, self.position.direction)
+        next_pos.direction = (self.position.direction + rotation) % 360
+        if next_pos.direction < 0:
+            next_pos.direction += 360
+        next_pos.x -= np.cos(next_pos.direction * np.pi / 180) * speed
+        next_pos.y -= np.sin(next_pos.direction * np.pi / 180) * speed
+        if next_pos.x < 0:
+            next_pos.x = 0
+        elif next_pos.x > self.planet.shape[0] - 1:
+            next_pos.x = self.planet.shape[0] - 1
+        if next_pos.y < 0:
+            next_pos.y = 0
+        elif next_pos.y > self.planet.shape[1] - 1:
+            next_pos.y = self.planet.shape[1] - 1
+        if self.planet[round(next_pos.x)][round(next_pos.y)] == 1:
+            if self.planet[round(self.position.x)][round(next_pos.y)] == 1:
+                next_pos.y = self.position.y
+            if self.planet[round(next_pos.x)][round(self.position.y)] == 1:
+                next_pos.x = self.position.x
+        self.position = next_pos
 
     def scan(self):
         """Scan the environment with its sensors"""
