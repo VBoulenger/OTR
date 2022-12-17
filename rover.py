@@ -29,6 +29,18 @@ class Rover:
         self.planet = planet
         self.path = self.find_path((self.position.x, self.position.y), goal)
 
+    def autoguidance_step(self):
+        """Iterate this function to move the rover along its computed path"""
+        if self.path:
+            print(f"Moving to {self.path[0]}")
+            delta_x = self.path[0][0] - self.position.x
+            delta_y = self.path[0][1] - self.position.y
+            speed = np.sqrt(delta_x**2 + delta_y**2)
+            angle_with_horizontal_axis = np.arctan2(delta_y, -delta_x) * 180 / np.pi
+            rotation = 360 - angle_with_horizontal_axis - self.position.direction
+            self.move(speed, rotation)
+            self.path.pop(0)
+
     def move(self, speed, rotation):
         """Move the rover with given speed and rotation"""
         next_pos = Position(self.position.x, self.position.y, self.position.direction)
