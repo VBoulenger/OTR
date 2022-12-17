@@ -24,6 +24,13 @@ class Rover:
     A class to represent a rover with a given position on a map. The map should be a binary map.
     """
 
+    # FIXME: Discrete world
+    # Un problème se pose: on travaille dans un monde discret et c'est pour
+    # l'instant incompatible avec les erreurs de vitesse et de rotation et la
+    # localisation. Il faudrait réfléchir pour changer ça. Une idée: voir le
+    # path trouvé par l'algo de pathfinding comme une suite de waypoints que le
+    # robot doit suivre ? À creuser.
+
     def __init__(self, position, planet, goal):
         self.position = position
         self.planet = planet
@@ -66,6 +73,7 @@ class Rover:
 
     def scan(self):
         """Scan the environment with its sensors"""
+        # TODO
 
     def path_heuristic(self, pos1, pos2):
         """Heuristic used in A* algorithm"""
@@ -136,3 +144,4 @@ class Rover:
 
     def locate(self):
         """Find its position on the map"""
+        # TODO implement EKF or PF
