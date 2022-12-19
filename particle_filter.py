@@ -70,3 +70,35 @@ class BasicRover:
             next_pos.y = self.planet.size - 1
 
         return next_pos
+
+
+class Rover(BasicRover):
+    """
+    Class to represent the actual rover. It inherits from BasicRover but also has
+    some additional methods to locate itself and determine which path it should take.
+    """
+
+    def __init__(
+        self,
+        position: Position,
+        planet: Planet,
+        noise: Noise,
+    ):
+        super().__init__(position, planet, noise)
+
+        self.position_dr: Position = self.position_true
+        self.position_est: Position = self.position_true
+
+        # Sensing
+        self.observations: list[float]
+
+    def sense(self):
+        """Get distance between the rover and the landmarks"""
+        self.observations = []
+        for landmark in self.planet.landmarks:
+            dist = np.sqrt(
+                (self.position_true.x - landmark.x) ** 2
+                + (self.position_true.y - landmark.y) ** 2
+            )
+            dist += np.random.normal(0.0, self.noise.sensing)
+            self.observations.append(dist)
