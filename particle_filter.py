@@ -112,6 +112,17 @@ class RoverParticle(BasicRover):
             self.position_true - other.position_true, self.planet, self.noise
         )
 
+    def measurement_likelihood(self, measurements):
+        """Find the likelihood of the measurement"""
+        likelihood = 1.0
+        for i, landmark in enumerate(self.planet.landmarks):
+            dist = np.sqrt(
+                (self.position_true.x - landmark.x) ** 2
+                + (self.position_true.y - landmark.y) ** 2
+            )
+            likelihood *= gaussian(dist - measurements[i], self.noise.sensing)
+        self.weight = likelihood
+
 
 class Rover(BasicRover):
     """
