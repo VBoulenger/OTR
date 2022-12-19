@@ -6,6 +6,7 @@ The world is free of any obstacles, we just check that the rover is not leaving 
 import copy
 from dataclasses import dataclass
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -221,3 +222,58 @@ class Rover(BasicRover):
 
         # Localization
         self.pf_localization(speed, rotation)
+
+
+def main():
+    """Main function for the simulation"""
+    # Initialization
+
+    init_pos = Position(0, 0, 0)
+    landmarks = [
+        Landmark(20, 20),
+        Landmark(40, 40),
+        Landmark(20, 50),
+        Landmark(50, 20),
+        Landmark(60, 60),
+        Landmark(40, 70),
+        Landmark(70, 40),
+    ]
+    planet = Planet(100, landmarks)
+    noise = Noise(0.5, 5.0, 0.5)
+    rover = Rover(init_pos, planet, noise, particle_number=100)
+
+    true_pos = [rover.position_true]
+    est_pos = [rover.position_est]
+    dr_pos = [rover.position_dr]
+
+    # Simulation
+
+    for _ in range(50):
+        rover.time_step()
+
+        true_pos.append(rover.position_true)
+        est_pos.append(rover.position_est)
+        dr_pos.append(rover.position_dr)
+
+    # Results
+
+    plt.plot([pos.x for pos in true_pos], [pos.y for pos in true_pos], label="true")
+    plt.plot([pos.x for pos in est_pos], [pos.y for pos in est_pos], label="estimated")
+    plt.plot(
+        [pos.x for pos in dr_pos], [pos.y for pos in dr_pos], label="dead_reckoning"
+    )
+    plt.scatter(
+        [l.x for l in rover.planet.landmarks],
+        [l.y for l in rover.planet.landmarks],
+        c="r",
+        marker="x",
+    )
+    plt.xlim([0, 100])
+    plt.ylim([0, 100])
+    plt.legend()
+
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
