@@ -204,3 +204,20 @@ class Rover(BasicRover):
             indexes.append(ind)
 
         self.rover_particles = [copy.deepcopy(self.rover_particles[i]) for i in indexes]
+
+    def time_step(self):
+        """Perform a time step (i.e. move rover, sense, locate, etc.)"""
+        speed = 5
+        rotation = 7.5  # deg
+        self.position_dr = self.move(self.position_dr, speed, rotation)
+
+        # Add noise
+        speed_noisy = speed + np.random.normal(0.0, self.noise.speed)
+        rotation_noisy = rotation + np.random.normal(0.0, self.noise.rotation)
+        self.position_true = self.move(self.position_true, speed_noisy, rotation_noisy)
+
+        # Observation
+        self.sense()
+
+        # Localization
+        self.pf_localization(speed, rotation)
