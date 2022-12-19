@@ -93,14 +93,31 @@ class Rover(BasicRover):
         position: Position,
         planet: Planet,
         noise: Noise,
+        particle_number: int = 100,
     ):
         super().__init__(position, planet, noise)
 
-        self.position_dr: Position = self.position_true
-        self.position_est: Position = self.position_true
+        self.position_dr: Position = (
+            self.position_true
+        )  # Dead reckoning position, we assume that the rover move without noise
+        self.position_est: Position = (
+            self.position_true
+        )  # Estimated position of the rover with PF
 
         # Sensing
         self.observations: list[float]
+
+        # Particle Filter
+
+        # Initialize particle states with the initial state of the rover
+        # (assumptions: it is known but that should be able to be removed
+        # without causing too much troubles)
+
+        self.particle_number = particle_number
+        self.rover_particles: list[RoverParticle] = [
+            RoverParticle(position, planet, Noise(1, 5.0, 5.0))
+            for i in range(self.particle_number)
+        ]
 
     def sense(self):
         """Get distance between the rover and the landmarks"""
