@@ -37,6 +37,19 @@ class Position:
     y: float
     direction: float
 
+    def __mul__(self, scalar):
+        return Position(self.x * scalar, self.y * scalar, self.direction * scalar)
+
+    def __add__(self, other):
+        return Position(
+            self.x + other.x, self.y + other.y, self.direction + other.direction
+        )
+
+    def __sub__(self, other):
+        return Position(
+            self.x - other.x, self.y - other.y, self.direction - other.direction
+        )
+
 
 @dataclass
 class Noise:
@@ -85,6 +98,19 @@ class RoverParticle(BasicRover):
 
         # Particle filter
         self.weight = 1.0
+
+    def __mul__(self, scalar):
+        return RoverParticle(self.position_true * scalar, self.planet, self.noise)
+
+    def __add__(self, other):
+        return RoverParticle(
+            self.position_true + other.position_true, self.planet, self.noise
+        )
+
+    def __sub__(self, other):
+        return RoverParticle(
+            self.position_true - other.position_true, self.planet, self.noise
+        )
 
 
 class Rover(BasicRover):
