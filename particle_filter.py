@@ -72,6 +72,16 @@ class BasicRover:
         return next_pos
 
 
+class RoverParticle(BasicRover):
+    """Class to represent a particle in the particle filter"""
+
+    def __init__(self, position, planet, noise):
+        super().__init__(position, planet, noise)
+
+        # Particle filter
+        self.weight = 1.0
+
+
 class Rover(BasicRover):
     """
     Class to represent the actual rover. It inherits from BasicRover but also has
