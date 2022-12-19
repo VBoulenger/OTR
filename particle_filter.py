@@ -3,6 +3,7 @@ Define classes and simulation for a Rover that can estimate its position using a
 The world is free of any obstacles, we just check that the rover is not leaving the world.
 """
 
+import copy
 from dataclasses import dataclass
 
 import numpy as np
@@ -171,3 +172,35 @@ class Rover(BasicRover):
             )
             dist += np.random.normal(0.0, self.noise.sensing)
             self.observations.append(dist)
+
+    def pf_localization(self, speed, rotation):
+        """Localize rover using particle filter"""
+        sum_weight = 0
+        for rover in self.rover_particles:
+            speed_noisy = speed + np.random.normal(0.0, self.noise.speed)
+            rotation_noisy = rotation + np.random.normal(0.0, self.noise.rotation)
+            rover.position_true = rover.move(
+                rover.position_true, speed_noisy, rotation_noisy
+            )
+            rover.measurement_likelihood(self.observations)
+            sum_weight += rover.weight
+        self.position_est = np.sum(
+            [rover * (rover.weight / sum_weight) for rover in self.rover_particles]
+        ).position_true
+        self.resampling()
+
+    def resampling(self):
+        """Resample with low variance"""
+        indexes = []
+        ind = np.random.randint(0, self.particle_number)
+        beta = 0.0
+        max_weight = np.max([rover.weight for rover in self.rover_particles])
+
+        for i in range(self.particle_number):
+            beta += np.random.uniform(0, 1) * 2.0 * max_weight
+            while beta > self.rover_particles[ind].weight:
+                beta -= self.rover_particles[ind].weight
+                ind = np.mod(ind + 1, self.particle_number)
+            indexes.append(ind)
+
+        self.rover_particles = [copy.deepcopy(self.rover_particles[i]) for i in indexes]
