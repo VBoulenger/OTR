@@ -8,6 +8,11 @@ from dataclasses import dataclass
 import numpy as np
 
 
+def gaussian(x, sigma):
+    """Normal law"""
+    return np.exp(-(np.power(x / sigma, 2) / 2) / (np.sqrt(2.0 * np.pi) * sigma))
+
+
 @dataclass
 class Landmark:
     """Represents a landmark at a given position"""
