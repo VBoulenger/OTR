@@ -316,13 +316,21 @@ class Rover(BasicRover):
 
     def time_step(self):
         """Perform a time step (i.e. move rover, sense, locate, etc.)"""
-        speed = 5
-        rotation = 7.5  # deg
+
+        speed, rotation = self.calc_control()
+        speed = min(speed, self.max_speed)  # Speed is capped before adding noise
+
         self.position_dr = self.move(self.position_dr, speed, rotation)
 
         # Add noise
-        speed_noisy = speed + np.random.normal(0.0, self.noise.speed)
+        if speed != 0:
+            speed_noisy = speed + np.random.normal(0.0, self.noise.speed)
+        else:
+            speed_noisy = speed
+
         rotation_noisy = rotation + np.random.normal(0.0, self.noise.rotation)
+
+        # Compute the true position of rover
         self.position_true = self.move(self.position_true, speed_noisy, rotation_noisy)
 
         # Observation
@@ -330,6 +338,13 @@ class Rover(BasicRover):
 
         # Localization
         self.position_est = self.pf_localization(speed, rotation)
+
+        # Check if we reached waypoint
+        if (
+            self.path
+            and (round(self.position_est.y), round(self.position_est.x)) == self.path[0]
+        ):
+            self.path.pop(0)
 
 
 def main():
@@ -363,7 +378,7 @@ def main():
 
     # Simulation
 
-    for _ in range(50):
+    while rover.path:
         rover.time_step()
 
         true_pos.append(rover.position_true)
