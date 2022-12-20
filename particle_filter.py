@@ -92,6 +92,7 @@ class BasicRover:
         next_pos.x += np.cos(next_pos.direction * np.pi / 180) * speed
         next_pos.y += np.sin(next_pos.direction * np.pi / 180) * speed
 
+        # Check for collisions with world boundaries
         if next_pos.x < 0:
             next_pos.x = 0
         elif next_pos.x > self.planet.size_x() - 1:
@@ -101,6 +102,12 @@ class BasicRover:
         elif next_pos.y > self.planet.size_y() - 1:
             next_pos.y = self.planet.size_y() - 1
 
+        # Check for collisions with walls
+        if self.planet.maze[round(next_pos.y)][round(next_pos.x)] == 1:
+            if self.planet.maze[round(next_pos.y)][round(position.x)] == 1:
+                next_pos.y = position.y
+            if self.planet.maze[round(position.y)][round(next_pos.x)] == 1:
+                next_pos.x = position.x
         return next_pos
 
 
