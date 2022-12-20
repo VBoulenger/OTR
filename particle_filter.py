@@ -298,6 +298,18 @@ class Rover(BasicRover):
                     heapq.heappush(oheap, (fscore[neighbor], neighbor))
         return []
 
+    def calc_control(self):
+        """The rover compute its control input for the next step in order to reach its next waypoint."""
+        if self.path:
+            print(f"Moving towards {self.path[0]}")
+            delta_x = self.path[0][1] - self.position_est.x
+            delta_y = self.path[0][0] - self.position_est.y
+            speed = np.sqrt(delta_x**2 + delta_y**2)
+            angle_with_horizontal_axis = np.arctan2(delta_y, delta_x) * 180 / np.pi
+            rotation = angle_with_horizontal_axis - self.position_est.direction
+            return speed, rotation
+        return 0, 0
+
     def time_step(self):
         """Perform a time step (i.e. move rover, sense, locate, etc.)"""
         speed = 5
