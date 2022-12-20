@@ -6,8 +6,12 @@ The world is free of any obstacles, we just check that the rover is not leaving 
 import copy
 from dataclasses import dataclass
 
+import cv2
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+
+matplotlib.use("TkAgg")
 
 
 def gaussian(x, sigma):
@@ -246,7 +250,13 @@ def main():
         Landmark(40, 70),
         Landmark(70, 40),
     ]
-    planet = Planet(100, landmarks)
+
+    # Load maze
+    img_path = "images/map_200.png"
+    maze = cv2.bitwise_not(cv2.imread(img_path, 0)) / 255.0
+    maze[maze != 0] = 1
+
+    planet = Planet(maze, landmarks)
     noise = Noise(0.5, 5.0, 0.5)
     rover = Rover(init_pos, planet, noise, particle_number=100)
 
@@ -265,6 +275,7 @@ def main():
 
     # Results
 
+    plt.imshow(maze, cmap="gray_r")
     plt.plot([pos.x for pos in true_pos], [pos.y for pos in true_pos], label="true")
     plt.plot([pos.x for pos in est_pos], [pos.y for pos in est_pos], label="estimated")
     plt.plot(
@@ -276,8 +287,8 @@ def main():
         c="r",
         marker="x",
     )
-    plt.xlim([0, 100])
-    plt.ylim([0, 100])
+    plt.xlim([0, planet.size_x() - 1])
+    plt.ylim([0, planet.size_y() - 1])
     plt.legend()
 
     plt.show()
