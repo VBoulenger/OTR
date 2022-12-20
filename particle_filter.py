@@ -11,8 +11,12 @@ import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import animation
 
 matplotlib.use("TkAgg")
+
+# Warning: this should be changed to your local install of FFMPEG if you want to save the matplotlib animation.
+plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
 
 def gaussian(x, sigma):
@@ -183,7 +187,6 @@ class Rover(BasicRover):
         # Initialize particle states with the initial state of the rover
         # (assumptions: it is known but that should be able to be removed
         # without causing too much troubles)
-
         self.particle_number = particle_number
         self.rover_particles: list[RoverParticle] = [
             RoverParticle(position, planet, Noise(1, 5.0, 5.0))
@@ -275,9 +278,7 @@ class Rover(BasicRover):
                 tentative_g_score = gscore[current] + self.path_heuristic(
                     current, neighbor
                 )
-                if (
-                    neighbor[0] < 0 or neighbor[0] > self.planet.size_x() - 1
-                ):  # TODO check order of x and y on size when using rectangular map !!!!
+                if neighbor[0] < 0 or neighbor[0] > self.planet.size_x() - 1:
                     continue
 
                 if neighbor[1] < 0 or neighbor[1] > self.planet.size_y() - 1:
@@ -305,7 +306,7 @@ class Rover(BasicRover):
     def calc_control(self):
         """The rover compute its control input for the next step in order to reach its next waypoint."""
         if self.path:
-            print(f"Moving towards {self.path[0]}")
+            # print(f"Moving towards {self.path[0]}")
             delta_x = self.path[0][1] - self.position_est.x
             delta_y = self.path[0][0] - self.position_est.y
             speed = np.sqrt(delta_x**2 + delta_y**2)
@@ -347,61 +348,113 @@ class Rover(BasicRover):
             self.path.pop(0)
 
 
-def main():
-    """Main function for the simulation"""
-    # Initialization
+def animate(
+    i, rover, lists_pos, ax_plot, ax_scatter, landmarks_ray
+):  # pylint: disable=too-many-locals, unused-argument
+    """Animate function for matplotlib animation"""
+    true_list, est_list, dr_list = lists_pos
+    true_path, est_path, dr_path = ax_plot
+    true_pos, est_pos, dr_pos = ax_scatter
 
+    rover.time_step()
+
+    true_list.append(rover.position_true)
+    est_list.append(rover.position_est)
+    dr_list.append(rover.position_dr)
+
+    true_path[0].set_data([pos.x for pos in true_list], [pos.y for pos in true_list])
+    est_path[0].set_data([pos.x for pos in est_list], [pos.y for pos in est_list])
+    dr_path[0].set_data([pos.x for pos in dr_list], [pos.y for pos in dr_list])
+    true_pos.set_offsets([rover.position_true.x, rover.position_true.y])
+    est_pos.set_offsets([rover.position_est.x, rover.position_est.y])
+    dr_pos.set_offsets([rover.position_dr.x, rover.position_dr.y])
+
+    for k, landmark in enumerate(rover.planet.landmarks):
+        landmarks_ray[k][0].set_data(
+            [landmark.x, rover.position_true.x], [landmark.y, rover.position_true.y]
+        )
+
+    return true_path, est_path, dr_path, true_pos, est_pos, dr_pos, landmarks_ray
+
+
+def main():  # pylint: disable=too-many-locals
+    """Main function for the simulation"""
+
+    # Initialization
     init_pos = Position(0, 0, 0)
     landmarks = [
-        Landmark(20, 20),
-        Landmark(40, 40),
-        Landmark(20, 50),
+        Landmark(25, 150),
+        Landmark(50, 80),
         Landmark(50, 20),
-        Landmark(60, 60),
-        Landmark(40, 70),
-        Landmark(70, 40),
+        Landmark(120, 50),
+        Landmark(125, 115),
+        Landmark(160, 80),
+        Landmark(190, 185),
     ]
 
     # Load maze
-
     img_path = "images/map_200.png"
     maze = cv2.bitwise_not(cv2.imread(img_path, 0)) / 255.0
     maze[maze != 0] = 1
     planet = Planet(maze, landmarks)
     noise = Noise(0.5, 5.0, 0.5)
-    final_pos = (199, 199)
+    final_pos = (planet.size_x() - 1, planet.size_y() - 1)
     rover = Rover(init_pos, final_pos, planet, noise)
 
-    true_pos = [rover.position_true]
-    est_pos = [rover.position_est]
-    dr_pos = [rover.position_dr]
+    true_pos_list = [rover.position_true]
+    est_pos_list = [rover.position_est]
+    dr_pos_list = [rover.position_dr]
 
     # Simulation
-
-    while rover.path:
-        rover.time_step()
-
-        true_pos.append(rover.position_true)
-        est_pos.append(rover.position_est)
-        dr_pos.append(rover.position_dr)
-
-    # Results
-
-    plt.imshow(maze, cmap="gray_r")
-    plt.plot([pos.x for pos in true_pos], [pos.y for pos in true_pos], label="true")
-    plt.plot([pos.x for pos in est_pos], [pos.y for pos in est_pos], label="estimated")
-    plt.plot(
-        [pos.x for pos in dr_pos], [pos.y for pos in dr_pos], label="dead_reckoning"
+    fig = plt.figure()
+    ax = fig.add_subplot(
+        111, xlim=(0, planet.size_x() - 1), ylim=(0, planet.size_y() - 1)
     )
-    plt.scatter(
+    ax.imshow(maze, cmap="gray_r")
+
+    # Trajectories
+    true_path = ax.plot([], [], c="C0", alpha=0.6, label="True trajectory", zorder=1)
+    est_path = ax.plot(
+        [], [], c="C1", alpha=0.6, label="Estimated trajectory", zorder=1
+    )
+    dr_path = ax.plot(
+        [], [], c="C2", alpha=0.6, label="Dead_reckoning trajectory", zorder=1
+    )
+
+    # Actual position
+    true_pos = ax.scatter([], [], c="C0", marker="o", s=10, zorder=2)
+    est_pos = ax.scatter([], [], c="C1", marker="o", s=10, zorder=2)
+    dr_pos = ax.scatter([], [], c="C2", marker="o", s=10, zorder=2)
+
+    # Landmarks
+    ax.scatter(
         [l.x for l in rover.planet.landmarks],
         [l.y for l in rover.planet.landmarks],
         c="r",
         marker="x",
     )
-    plt.xlim([0, planet.size_x() - 1])
-    plt.ylim([0, planet.size_y() - 1])
-    plt.legend()
+    landmarks_ray = [
+        ax.plot([], [], c="r", alpha=0.5, zorder=1) for _ in rover.planet.landmarks
+    ]
+
+    # Results
+    ax.legend()
+    anim = animation.FuncAnimation(  # pylint: disable=unused-variable
+        fig,
+        animate,
+        frames=3 * len(rover.path),
+        interval=20,
+        fargs=(
+            rover,
+            [true_pos_list, est_pos_list, dr_pos_list],
+            [true_path, est_path, dr_path],
+            [true_pos, est_pos, dr_pos],
+            landmarks_ray,
+        ),
+    )
+
+    # Save the animation (it can take a while)
+    # anim.save("path_planning.mp4", fps=30, dpi=300)
 
     plt.show()
 
