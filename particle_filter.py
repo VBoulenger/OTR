@@ -27,8 +27,16 @@ class Landmark:
 class Planet:
     """Represents a planet (world) with a given size and landmarks"""
 
-    size: float
+    maze: np.array
     landmarks: list[Landmark]
+
+    def size_x(self):
+        """Return the size of the world along the x axis"""
+        return self.maze.shape[0]
+
+    def size_y(self):
+        """Return the size of the world along the y axis"""
+        return self.maze.shape[1]
 
 
 @dataclass
@@ -82,12 +90,12 @@ class BasicRover:
 
         if next_pos.x < 0:
             next_pos.x = 0
-        elif next_pos.x > self.planet.size - 1:
-            next_pos.x = self.planet.size - 1
+        elif next_pos.x > self.planet.size_x() - 1:
+            next_pos.x = self.planet.size_x() - 1
         if next_pos.y < 0:
             next_pos.y = 0
-        elif next_pos.y > self.planet.size - 1:
-            next_pos.y = self.planet.size - 1
+        elif next_pos.y > self.planet.size_y() - 1:
+            next_pos.y = self.planet.size_y() - 1
 
         return next_pos
 
