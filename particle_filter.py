@@ -4,6 +4,7 @@ The world is free of any obstacles, we just check that the rover is not leaving 
 """
 
 import copy
+import heapq
 from dataclasses import dataclass
 
 import cv2
@@ -154,6 +155,7 @@ class Rover(BasicRover):
     def __init__(
         self,
         position: Position,
+        goal: tuple[int],
         planet: Planet,
         noise: Noise,
         particle_number: int = 100,
@@ -167,10 +169,13 @@ class Rover(BasicRover):
             self.position_true
         )  # Estimated position of the rover with PF
 
-        # Sensing
+        # Path Planning: A*
+        self.path = self.find_path((self.position_est.x, self.position_est.y), goal)
+
+        # Sensing: RFID/LIDAR to determined landmarks ?
         self.observations: list[float]
 
-        # Particle Filter
+        # Localization: Particle Filter
 
         # Initialize particle states with the initial state of the rover
         # (assumptions: it is known but that should be able to be removed
@@ -225,6 +230,74 @@ class Rover(BasicRover):
 
         self.rover_particles = [copy.deepcopy(self.rover_particles[i]) for i in indexes]
 
+    def path_heuristic(self, pos1, pos2):
+        """Heuristic used in A* algorithm"""
+        return np.abs(pos2[0] - pos1[0]) + np.abs(pos2[1] - pos1[1])
+
+    def find_path(self, start, goal):
+        """Find path from a starting point to a goal point on the map using A* algorithm"""
+
+        neighbors = [
+            (0, 1),
+            (0, -1),
+            (1, 0),
+            (-1, 0),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1),
+        ]
+
+        close_set = set()
+        came_from = {}
+        gscore = {start: 0}
+        fscore = {start: self.path_heuristic(start, goal)}
+        oheap = []
+
+        heapq.heappush(oheap, (fscore[start], start))
+        while oheap:
+            current = heapq.heappop(oheap)[1]
+
+            if current == goal:
+                data = []
+                while current in came_from:
+                    data.append(current)
+                    current = came_from[current]
+                return data[::-1]
+
+            close_set.add(current)
+            for i, j in neighbors:
+                neighbor = current[0] + i, current[1] + j
+                tentative_g_score = gscore[current] + self.path_heuristic(
+                    current, neighbor
+                )
+                if (
+                    neighbor[0] < 0 or neighbor[0] > self.planet.size_x() - 1
+                ):  # TODO check order of x and y on size when using rectangular map !!!!
+                    continue
+
+                if neighbor[1] < 0 or neighbor[1] > self.planet.size_y() - 1:
+                    continue
+
+                if self.planet.maze[neighbor[0]][neighbor[1]] == 1:
+                    continue
+
+                if neighbor in close_set and tentative_g_score >= gscore.get(
+                    neighbor, 0
+                ):
+                    continue
+
+                if tentative_g_score < gscore.get(neighbor, 0) or neighbor not in [
+                    i[1] for i in oheap
+                ]:
+                    came_from[neighbor] = current
+                    gscore[neighbor] = tentative_g_score
+                    fscore[neighbor] = tentative_g_score + self.path_heuristic(
+                        neighbor, goal
+                    )
+                    heapq.heappush(oheap, (fscore[neighbor], neighbor))
+        return []
+
     def time_step(self):
         """Perform a time step (i.e. move rover, sense, locate, etc.)"""
         speed = 5
@@ -259,13 +332,14 @@ def main():
     ]
 
     # Load maze
+
     img_path = "images/map_200.png"
     maze = cv2.bitwise_not(cv2.imread(img_path, 0)) / 255.0
     maze[maze != 0] = 1
-
     planet = Planet(maze, landmarks)
     noise = Noise(0.5, 5.0, 0.5)
-    rover = Rover(init_pos, planet, noise, particle_number=100)
+    final_pos = (199, 199)
+    rover = Rover(init_pos, final_pos, planet, noise)
 
     true_pos = [rover.position_true]
     est_pos = [rover.position_est]
