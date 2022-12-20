@@ -209,10 +209,11 @@ class Rover(BasicRover):
             )
             rover.measurement_likelihood(self.observations)
             sum_weight += rover.weight
-        self.position_est = np.sum(
+        position_est = np.sum(
             [rover * (rover.weight / sum_weight) for rover in self.rover_particles]
         ).position_true
         self.resampling()
+        return position_est
 
     def resampling(self):
         """Resample with low variance"""
@@ -325,7 +326,7 @@ class Rover(BasicRover):
         self.sense()
 
         # Localization
-        self.pf_localization(speed, rotation)
+        self.position_est = self.pf_localization(speed, rotation)
 
 
 def main():
