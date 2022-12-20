@@ -158,6 +158,7 @@ class Rover(BasicRover):
         goal: tuple[int],
         planet: Planet,
         noise: Noise,
+        max_speed: float = 2,
         particle_number: int = 100,
     ):
         super().__init__(position, planet, noise)
@@ -168,6 +169,8 @@ class Rover(BasicRover):
         self.position_est: Position = (
             self.position_true
         )  # Estimated position of the rover with PF
+
+        self.max_speed: float = max_speed
 
         # Path Planning: A*
         self.path = self.find_path((self.position_est.x, self.position_est.y), goal)
