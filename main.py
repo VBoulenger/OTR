@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import animation
 
-matplotlib.use("TkAgg")
+matplotlib.use("qt5agg")
 
 # Warning: this should be changed to your local install of FFMPEG if you want to save the matplotlib animation.
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
@@ -37,7 +37,7 @@ class Planet:
     """Represents a planet (world) with a given size and landmarks"""
 
     maze: np.array
-    landmarks: list[Landmark]
+    landmarks: list
 
     def size_x(self):
         """Return the size of the world along the x axis"""
@@ -108,10 +108,10 @@ class BasicRover:
             next_pos.y = self.planet.size_y() - 1
 
         # Check for collisions with walls
-        if self.planet.maze[round(next_pos.y)][round(next_pos.x)] == 1:
-            if self.planet.maze[round(next_pos.y)][round(position.x)] == 1:
+        if self.planet.maze[int(round(next_pos.y))][int(round(next_pos.x))] == 1:
+            if self.planet.maze[int(round(next_pos.y))][int(round(position.x))] == 1:
                 next_pos.y = position.y
-            if self.planet.maze[round(position.y)][round(next_pos.x)] == 1:
+            if self.planet.maze[int(round(position.y))][int(round(next_pos.x))] == 1:
                 next_pos.x = position.x
         return next_pos
 
@@ -159,7 +159,7 @@ class Rover(BasicRover):
     def __init__(
         self,
         position: Position,
-        goal: tuple[int],
+        goal: tuple,
         planet: Planet,
         noise: Noise,
         max_speed: float = 2,
