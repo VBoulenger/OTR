@@ -18,6 +18,8 @@ matplotlib.use("TkAgg")
 # Warning: this should be changed to your local install of FFMPEG if you want to save the matplotlib animation.
 plt.rcParams["animation.ffmpeg_path"] = "/usr/bin/ffmpeg"
 
+PLOT_PARTICLES = False
+
 
 def gaussian(x, sigma):
     """Normal law"""
@@ -363,7 +365,8 @@ def animate(
     """Animate function for matplotlib animation"""
     true_list, est_list = lists_pos
     true_path, est_path = ax_plot
-    true_pos, est_pos, particles = ax_scatter
+    true_pos = ax_scatter[0]
+    est_pos = ax_scatter[1]
 
     rover.time_step()
 
@@ -375,13 +378,16 @@ def animate(
     true_pos.set_offsets([rover.position_true.x, rover.position_true.y])
     est_pos.set_offsets([rover.position_est.x, rover.position_est.y])
 
-    for k, particle in enumerate(particles):
-        particle.set_offsets(
-            [
-                rover.rover_particles[k].position_true.x,
-                rover.rover_particles[k].position_true.y,
-            ]
-        )
+    # Particles
+    if PLOT_PARTICLES:
+        particles = ax_scatter[2]
+        for k, particle in enumerate(particles):
+            particle.set_offsets(
+                [
+                    rover.rover_particles[k].position_true.x,
+                    rover.rover_particles[k].position_true.y,
+                ]
+            )
 
     for ray in landmarks_ray:
         ray[0].set_data([], [])
@@ -391,7 +397,7 @@ def animate(
             [obs[1].y, rover.position_true.y],
         )
 
-    return true_path, est_path, true_pos, est_pos, landmarks_ray
+    return true_path, est_path
 
 
 def main():  # pylint: disable=too-many-locals
@@ -435,8 +441,11 @@ def main():  # pylint: disable=too-many-locals
     )
 
     # Actual position
+    ax_scatter = []
     true_pos = ax.scatter([], [], c="C0", marker="o", s=10, zorder=2)
     est_pos = ax.scatter([], [], c="C1", marker="o", s=10, zorder=2)
+    ax_scatter.append(true_pos)
+    ax_scatter.append(est_pos)
 
     # Landmarks
     ax.scatter(
@@ -449,11 +458,12 @@ def main():  # pylint: disable=too-many-locals
         ax.plot([], [], c="r", alpha=0.5, zorder=1) for _ in rover.planet.landmarks
     ]
 
-    # Particles
-    particles = [
-        ax.scatter([], [], c="C2", marker="o", s=10, alpha=0.2)
-        for _ in rover.rover_particles
-    ]
+    if PLOT_PARTICLES:
+        particles = [
+            ax.scatter([], [], c="C2", marker="o", s=10, alpha=0.2)
+            for _ in rover.rover_particles
+        ]
+        ax_scatter.append(particles)
 
     # Results
     ax.legend()
@@ -466,7 +476,7 @@ def main():  # pylint: disable=too-many-locals
             rover,
             [true_pos_list, est_pos_list],
             [true_path, est_path],
-            [true_pos, est_pos, particles],
+            ax_scatter,
             landmarks_ray,
         ),
     )
