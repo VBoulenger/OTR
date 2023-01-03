@@ -179,9 +179,6 @@ class Rover(BasicRover):
     ):
         super().__init__(position, planet, noise, max_range)
 
-        self.position_dr: Position = (
-            self.position_true
-        )  # Dead reckoning position, we assume that the rover move without noise
         self.position_est: Position = (
             self.position_true
         )  # Estimated position of the rover with PF
@@ -333,8 +330,6 @@ class Rover(BasicRover):
         speed, rotation = self.calc_control()
         speed = min(speed, self.max_speed)  # Speed is capped before adding noise
 
-        self.position_dr = self.move(self.position_dr, speed, rotation)
-
         # Add noise
         if speed != 0:
             speed_noisy = speed + np.random.normal(0.0, self.noise.speed)
@@ -364,29 +359,26 @@ def animate(
     i, rover, lists_pos, ax_plot, ax_scatter, landmarks_ray
 ):  # pylint: disable=too-many-locals, unused-argument
     """Animate function for matplotlib animation"""
-    true_list, est_list, dr_list = lists_pos
-    true_path, est_path, dr_path = ax_plot
-    true_pos, est_pos, dr_pos = ax_scatter
+    true_list, est_list = lists_pos
+    true_path, est_path = ax_plot
+    true_pos, est_pos = ax_scatter
 
     rover.time_step()
 
     true_list.append(rover.position_true)
     est_list.append(rover.position_est)
-    dr_list.append(rover.position_dr)
 
     true_path[0].set_data([pos.x for pos in true_list], [pos.y for pos in true_list])
     est_path[0].set_data([pos.x for pos in est_list], [pos.y for pos in est_list])
-    dr_path[0].set_data([pos.x for pos in dr_list], [pos.y for pos in dr_list])
     true_pos.set_offsets([rover.position_true.x, rover.position_true.y])
     est_pos.set_offsets([rover.position_est.x, rover.position_est.y])
-    dr_pos.set_offsets([rover.position_dr.x, rover.position_dr.y])
 
     for k, landmark in enumerate(rover.planet.landmarks):
         landmarks_ray[k][0].set_data(
             [landmark.x, rover.position_true.x], [landmark.y, rover.position_true.y]
         )
 
-    return true_path, est_path, dr_path, true_pos, est_pos, dr_pos, landmarks_ray
+    return true_path, est_path, true_pos, est_pos, landmarks_ray
 
 
 def main():  # pylint: disable=too-many-locals
@@ -415,7 +407,6 @@ def main():  # pylint: disable=too-many-locals
 
     true_pos_list = [rover.position_true]
     est_pos_list = [rover.position_est]
-    dr_pos_list = [rover.position_dr]
 
     # Simulation
     fig = plt.figure()
@@ -429,14 +420,10 @@ def main():  # pylint: disable=too-many-locals
     est_path = ax.plot(
         [], [], c="C1", alpha=0.6, label="Estimated trajectory", zorder=1
     )
-    dr_path = ax.plot(
-        [], [], c="C2", alpha=0.6, label="Dead_reckoning trajectory", zorder=1
-    )
 
     # Actual position
     true_pos = ax.scatter([], [], c="C0", marker="o", s=10, zorder=2)
     est_pos = ax.scatter([], [], c="C1", marker="o", s=10, zorder=2)
-    dr_pos = ax.scatter([], [], c="C2", marker="o", s=10, zorder=2)
 
     # Landmarks
     ax.scatter(
@@ -458,9 +445,9 @@ def main():  # pylint: disable=too-many-locals
         interval=20,
         fargs=(
             rover,
-            [true_pos_list, est_pos_list, dr_pos_list],
-            [true_path, est_path, dr_path],
-            [true_pos, est_pos, dr_pos],
+            [true_pos_list, est_pos_list],
+            [true_path, est_path],
+            [true_pos, est_pos],
             landmarks_ray,
         ),
     )
