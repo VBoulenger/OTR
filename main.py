@@ -152,12 +152,13 @@ class RoverParticle(BasicRover):
     def measurement_likelihood(self, measurements):
         """Find the likelihood of the measurement"""
         likelihood = 1.0
-        for i, landmark in enumerate(self.planet.landmarks):
+        for measure in measurements:
             dist = np.sqrt(
-                (self.position_true.x - landmark.x) ** 2
-                + (self.position_true.y - landmark.y) ** 2
+                (self.position_true.x - measure[1].x) ** 2
+                + (self.position_true.y - measure[1].y) ** 2
             )
-            likelihood *= gaussian(dist - measurements[i], self.noise.sensing)
+            if dist <= self.max_range:
+                likelihood *= gaussian(dist - measure[0], self.noise.sensing)
         self.weight = likelihood
 
 
@@ -210,8 +211,9 @@ class Rover(BasicRover):
                 (self.position_true.x - landmark.x) ** 2
                 + (self.position_true.y - landmark.y) ** 2
             )
-            dist += np.random.normal(0.0, self.noise.sensing)
-            self.observations.append(dist)
+            if dist <= self.max_range:
+                dist += np.random.normal(0.0, self.noise.sensing)
+                self.observations.append([dist, landmark])
 
     def pf_localization(self, speed, rotation):
         """Localize rover using particle filter"""
@@ -373,9 +375,12 @@ def animate(
     true_pos.set_offsets([rover.position_true.x, rover.position_true.y])
     est_pos.set_offsets([rover.position_est.x, rover.position_est.y])
 
-    for k, landmark in enumerate(rover.planet.landmarks):
+    for ray in landmarks_ray:
+        ray[0].set_data([], [])
+    for k, obs in enumerate(rover.observations):
         landmarks_ray[k][0].set_data(
-            [landmark.x, rover.position_true.x], [landmark.y, rover.position_true.y]
+            [obs[1].x, rover.position_true.x],
+            [obs[1].y, rover.position_true.y],
         )
 
     return true_path, est_path, true_pos, est_pos, landmarks_ray
