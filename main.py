@@ -363,7 +363,7 @@ def animate(
     """Animate function for matplotlib animation"""
     true_list, est_list = lists_pos
     true_path, est_path = ax_plot
-    true_pos, est_pos = ax_scatter
+    true_pos, est_pos, particles = ax_scatter
 
     rover.time_step()
 
@@ -374,6 +374,14 @@ def animate(
     est_path[0].set_data([pos.x for pos in est_list], [pos.y for pos in est_list])
     true_pos.set_offsets([rover.position_true.x, rover.position_true.y])
     est_pos.set_offsets([rover.position_est.x, rover.position_est.y])
+
+    for k, particle in enumerate(particles):
+        particle.set_offsets(
+            [
+                rover.rover_particles[k].position_true.x,
+                rover.rover_particles[k].position_true.y,
+            ]
+        )
 
     for ray in landmarks_ray:
         ray[0].set_data([], [])
@@ -441,6 +449,12 @@ def main():  # pylint: disable=too-many-locals
         ax.plot([], [], c="r", alpha=0.5, zorder=1) for _ in rover.planet.landmarks
     ]
 
+    # Particles
+    particles = [
+        ax.scatter([], [], c="C2", marker="o", s=10, alpha=0.2)
+        for _ in rover.rover_particles
+    ]
+
     # Results
     ax.legend()
     anim = animation.FuncAnimation(  # pylint: disable=unused-variable
@@ -452,7 +466,7 @@ def main():  # pylint: disable=too-many-locals
             rover,
             [true_pos_list, est_pos_list],
             [true_path, est_path],
-            [true_pos, est_pos],
+            [true_pos, est_pos, particles],
             landmarks_ray,
         ),
     )
