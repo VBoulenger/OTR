@@ -82,10 +82,13 @@ class Noise:
 class BasicRover:
     """Define class to represent a basic rover. It can move on its planet and get information from the landmarks"""
 
-    def __init__(self, position: Position, planet: Planet, noise: Noise):
+    def __init__(
+        self, position: Position, planet: Planet, noise: Noise, max_range: float
+    ):
         self.position_true: Position = position
         self.planet: Planet = planet
         self.noise: Noise = noise
+        self.max_range: float = max_range
 
     def move(self, position, speed, rotation):
         """Move the rover with given speed and rotation"""
@@ -119,23 +122,31 @@ class BasicRover:
 class RoverParticle(BasicRover):
     """Class to represent a particle in the particle filter"""
 
-    def __init__(self, position, planet, noise):
-        super().__init__(position, planet, noise)
+    def __init__(self, position, planet, noise, max_range):
+        super().__init__(position, planet, noise, max_range)
 
         # Particle filter
         self.weight = 1.0
 
     def __mul__(self, scalar):
-        return RoverParticle(self.position_true * scalar, self.planet, self.noise)
+        return RoverParticle(
+            self.position_true * scalar, self.planet, self.noise, self.max_range
+        )
 
     def __add__(self, other):
         return RoverParticle(
-            self.position_true + other.position_true, self.planet, self.noise
+            self.position_true + other.position_true,
+            self.planet,
+            self.noise,
+            self.max_range,
         )
 
     def __sub__(self, other):
         return RoverParticle(
-            self.position_true - other.position_true, self.planet, self.noise
+            self.position_true - other.position_true,
+            self.planet,
+            self.noise,
+            self.max_range,
         )
 
     def measurement_likelihood(self, measurements):
@@ -163,9 +174,10 @@ class Rover(BasicRover):
         planet: Planet,
         noise: Noise,
         max_speed: float = 2,
+        max_range: float = 50,
         particle_number: int = 100,
     ):
-        super().__init__(position, planet, noise)
+        super().__init__(position, planet, noise, max_range)
 
         self.position_dr: Position = (
             self.position_true
@@ -189,7 +201,7 @@ class Rover(BasicRover):
         # without causing too much troubles)
         self.particle_number = particle_number
         self.rover_particles: list[RoverParticle] = [
-            RoverParticle(position, planet, Noise(1, 5.0, 5.0))
+            RoverParticle(position, planet, Noise(1, 5.0, 5.0), self.max_range)
             for i in range(self.particle_number)
         ]
 
