@@ -85,10 +85,11 @@ class BasicRover:
     """Define class to represent a basic rover. It can move on its planet and get information from the landmarks"""
 
     def __init__(
-        self, position: Position, planet: Planet, noise: Noise, max_range: float
+        self, position: Position, planet: Planet, planet_true: Planet, noise: Noise, max_range: float
     ):
         self.position_true: Position = position
         self.planet: Planet = planet
+        self.planet_true: Planet = planet_true
         self.noise: Noise = noise
         self.max_range: float = max_range
 
@@ -112,12 +113,15 @@ class BasicRover:
         elif next_pos.y > self.planet.size_y() - 1:
             next_pos.y = self.planet.size_y() - 1
 
-        # Check for collisions with walls
+        # Check for collisions with walls in the known planet
         if self.planet.maze[round(next_pos.y)][round(next_pos.x)] == 1:
+
             if self.planet.maze[round(next_pos.y)][round(position.x)] == 1:
                 next_pos.y = position.y
+
             if self.planet.maze[round(position.y)][round(next_pos.x)] == 1:
                 next_pos.x = position.x
+
         return next_pos
 
 
@@ -139,6 +143,7 @@ class RoverParticle(BasicRover):
         return RoverParticle(
             self.position_true + other.position_true,
             self.planet,
+            self.planet_true,
             self.noise,
             self.max_range,
         )
@@ -147,6 +152,7 @@ class RoverParticle(BasicRover):
         return RoverParticle(
             self.position_true - other.position_true,
             self.planet,
+            self.planet_true,
             self.noise,
             self.max_range,
         )
@@ -175,18 +181,23 @@ class Rover(BasicRover):
         position: Position,
         goal: tuple[int],
         planet: Planet,
+        planet_true: Planet,
         noise: Noise,
         max_speed: float = 2,
         max_range: float = 50,
         particle_number: int = 100,
     ):
-        super().__init__(position, planet, noise, max_range)
+        super().__init__(position, planet, planet_true, noise, max_range)
 
+        self.position_dr: Position = (
+            self.position_true
+        )  # Dead reckoning position, we assume that the rover move without noise
         self.position_est: Position = (
             self.position_true
         )  # Estimated position of the rover with PF
 
         self.max_speed: float = max_speed
+        self.goal = goal
 
         # Path Planning: A*
         self.path = self.find_path((self.position_est.x, self.position_est.y), goal)
@@ -201,9 +212,24 @@ class Rover(BasicRover):
         # without causing too much troubles)
         self.particle_number = particle_number
         self.rover_particles: list[RoverParticle] = [
-            RoverParticle(position, planet, Noise(1, 5.0, 5.0), self.max_range)
+            RoverParticle(position, planet, planet_true, Noise(1, 5.0, 5.0), self.max_range)
             for i in range(self.particle_number)
         ]
+
+    def move(self, position, speed, rotation):
+        next_pos = super().move(position, speed, rotation)
+
+        # Check for collisions with walls in the actual planet
+        if self.planet_true.maze[round(next_pos.y)][round(next_pos.x)] == 1:
+            self.discover(self.planet_true)
+            self.path = self.find_path(
+                (round(self.position_est.x), round(self.position_est.y)), self.goal
+            )
+        return next_pos
+
+    def discover(self, planet_true):
+        """Scan area around the rover."""
+        self.planet = planet_true
 
     def sense(self):
         """Get distance between the rover and the landmarks"""
@@ -416,13 +442,19 @@ def main():  # pylint: disable=too-many-locals
     ]
 
     # Load maze
-    img_path = "images/map_200.png"
+    img_path = "images/map200_Known.png"
     maze = cv2.bitwise_not(cv2.imread(img_path, 0)) / 255.0
     maze[maze != 0] = 1
     planet = Planet(maze, landmarks)
+
+    img_path = "images/map200_True.png"
+    maze_true = cv2.bitwise_not(cv2.imread(img_path, 0)) / 255.0
+    maze_true[maze_true != 0] = 1
+    planet_true = Planet(maze_true, landmarks)
+
     noise = Noise(0.5, 5.0, 0.5)
     final_pos = (planet.size_x() - 1, planet.size_y() - 1)
-    rover = Rover(init_pos, final_pos, planet, noise)
+    rover = Rover(init_pos, final_pos, planet, planet_true, noise)
 
     true_pos_list = [rover.position_true]
     est_pos_list = [rover.position_est]
@@ -432,7 +464,7 @@ def main():  # pylint: disable=too-many-locals
     ax = fig.add_subplot(
         111, xlim=(0, planet.size_x() - 1), ylim=(0, planet.size_y() - 1)
     )
-    ax.imshow(maze, cmap="gray_r")
+    ax.imshow(maze - 0.5 * maze_true, cmap="gray_r")
 
     # Trajectories
     true_path = ax.plot([], [], c="C0", alpha=0.6, label="True trajectory", zorder=1)
