@@ -122,6 +122,7 @@ class BasicRover:
             if self.planet.maze[round(position.y)][round(next_pos.x)] == 1:
                 next_pos.x = position.x
 
+                            
         return next_pos
 
 
