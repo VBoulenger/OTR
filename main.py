@@ -227,11 +227,14 @@ class Rover(BasicRover):
                 (round(self.position_est.x), round(self.position_est.y)), self.goal
             )
         return next_pos
-
-    def discover(self, planet_true):
-        """Scan area around the rover."""
-        self.planet = planet_true
-
+    
+    def discover(self,planet_true):
+	"""Scan area around the rover."""
+        x_min, x_max = round(self.position_true.x-4), round(self.position_true.x+4)
+        y_min, y_max = round(self.position_true.y-4), round(self.position_true.y+4)
+    
+        self.planet.maze[x_min:x_max, y_min:y_max] = planet_true.maze[x_min:x_max, y_min:y_max]
+        
     def sense(self):
         """Get distance between the rover and the landmarks"""
         self.observations = []
