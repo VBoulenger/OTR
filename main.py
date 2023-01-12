@@ -222,18 +222,27 @@ class Rover(BasicRover):
 
         # Check for collisions with walls in the actual planet
         if self.planet_true.maze[round(next_pos.y)][round(next_pos.x)] == 1:
+            
+            if self.planet.maze[round(next_pos.y)][round(position.x)] == 1:
+                self.position_true.y=round(self.position_true.y)
+                next_pos.y = self.position_true.y
+            
+            if self.planet.maze[round(position.y)][round(next_pos.x)] == 1:
+                self.position_true.x=round(self.position_true.x)
+                next_pos.x = self.position_true.x
+            
             self.discover(self.planet_true)
-            self.path = self.find_path(
-                (round(self.position_est.x), round(self.position_est.y)), self.goal
-            )
+
         return next_pos
     
     def discover(self,planet_true):
-	"""Scan area around the rover."""
-        x_min, x_max = round(self.position_true.x-4), round(self.position_true.x+4)
-        y_min, y_max = round(self.position_true.y-4), round(self.position_true.y+4)
+        """Scan area around the rover."""
+        x_min, x_max = round(self.position_true.x)-4, round(self.position_true).x+4
+        y_min, y_max = round(self.position_true.y)-4, round(self.position_true).y+4
     
         self.planet.maze[x_min:x_max, y_min:y_max] = planet_true.maze[x_min:x_max, y_min:y_max]
+        
+        self.find_path((self.path[0][0],self.path[0][1]), self.goal)
         
     def sense(self):
         """Get distance between the rover and the landmarks"""
