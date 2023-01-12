@@ -129,15 +129,15 @@ class BasicRover:
 class RoverParticle(BasicRover):
     """Class to represent a particle in the particle filter"""
 
-    def __init__(self, position, planet, noise, max_range):
-        super().__init__(position, planet, noise, max_range)
+    def __init__(self, position, planet, planet_true, noise, max_range):
+        super().__init__(position, planet, planet_true, noise, max_range)
 
         # Particle filter
         self.weight = 1.0
 
     def __mul__(self, scalar):
         return RoverParticle(
-            self.position_true * scalar, self.planet, self.noise, self.max_range
+            self.position_true * scalar, self.planet, self.planet_true, self.noise, self.max_range
         )
 
     def __add__(self, other):
@@ -231,16 +231,20 @@ class Rover(BasicRover):
                 self.position_true.x=round(self.position_true.x)
                 next_pos.x = self.position_true.x
             
-            self.discover(self.planet_true)        
+            self.discover()
 
         return next_pos
     
-    def discover(self,planet_true):
-        """Scan area around the rover."""
-        x_min, x_max = round(self.position_true.x)-4, round(self.position_true).x+4
-        y_min, y_max = round(self.position_true.y)-4, round(self.position_true).y+4
-    
-        self.planet.maze[x_min:x_max, y_min:y_max] = planet_true.maze[x_min:x_max, y_min:y_max]
+    def discover(self):
+        """Scan area around the rover and compute its new path."""
+        
+	scan_lgth=4
+        x_min = max(round(self.position_true.x)-scan_lgth, 0)
+        x_max = min(round(self.position_true.x)+scan_lgth, 40)
+        y_min = max(round(self.position_true.y)-scan_lgth, 0)
+        y_max = min(round(self.position_true.y)+scan_lgth, 40)
+
+        self.planet.maze[y_min:y_max, x_min:x_max] = self.planet_true.maze[y_min:y_max, x_min:x_max]
         
         self.path=self.find_path((self.path[0][0],self.path[0][1]), self.goal)
    
