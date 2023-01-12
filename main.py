@@ -481,7 +481,7 @@ def main():  # pylint: disable=too-many-locals
     ax = fig.add_subplot(
         111, xlim=(0, planet.size_x() - 1), ylim=(0, planet.size_y() - 1)
     )
-    ax.imshow(maze - 0.5 * maze_true, cmap="gray_r")
+    im=ax.imshow(maze - 0.5 * maze_true, cmap="gray_r")
 
     # Trajectories
     true_path = ax.plot([], [], c="C0", alpha=0.6, label="True trajectory", zorder=1)
@@ -527,6 +527,7 @@ def main():  # pylint: disable=too-many-locals
             [true_path, est_path],
             ax_scatter,
             landmarks_ray,
+            im,
         ),
     )
 
