@@ -231,7 +231,7 @@ class Rover(BasicRover):
                 self.position_true.x=round(self.position_true.x)
                 next_pos.x = self.position_true.x
             
-            self.discover(self.planet_true)
+            self.discover(self.planet_true)        
 
         return next_pos
     
@@ -242,8 +242,8 @@ class Rover(BasicRover):
     
         self.planet.maze[x_min:x_max, y_min:y_max] = planet_true.maze[x_min:x_max, y_min:y_max]
         
-        self.find_path((self.path[0][0],self.path[0][1]), self.goal)
-        
+        self.path=self.find_path((self.path[0][0],self.path[0][1]), self.goal)
+   
     def sense(self):
         """Get distance between the rover and the landmarks"""
         self.observations = []
