@@ -12,11 +12,13 @@ A Python implementation of the A\* algorithm coupled with a particle filter for 
 
 This project is a python simulation for a rover exploring a planet. The world is simulated by a 2D black and white image.
 
-A big assumption used here is the fact that the rover has a prior knowledge of this world (a necessary condition for the A\* algorithm).
+A big assumption used here is the fact that the rover has a prior knowledge of this world (a necessary condition for the A\* algorithm). Yet, we implement some obstacles (in white) that the rover doesn't know.
 
 Once the rover has planned its path, it will travel along it. Noise is added for every action the rover makes. When it moves, a Gaussian noise is added to its speed and to its rotation. A sensing noise is also added to the measurements that the rover makes on the landmarks.
 
-At every step, the rover estimates its position using the particle filter. Based on this estimated position and the path it needs to follow, it will compute its next control input for the following step
+At every step, the rover estimates its position using the particle filter. Based on this estimated position and the path it needs to follow, it will compute its next control input for the following step.
+
+Everytime a new obstacle is discovered, the rover will recompute its path, taking into account the new landscape.
 
 ## Installation
 
@@ -25,6 +27,8 @@ A few python packages are necessary to run the code:
 - [OpenCV](https://opencv.org/) (cv2)
 - [matplotlib](https://matplotlib.org/)
 - [numpy](https://numpy.org/)
+
+Note that [Python 3.10](https://www.python.org/downloads/release/python-3100/) is required.
 
 In order to save the animation, the program also use [FFMPEG](https://ffmpeg.org/).
 
