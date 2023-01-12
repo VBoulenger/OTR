@@ -78,6 +78,26 @@ class Noise:
     rotation: float
     speed: float
 
+class Cell:
+    """ Define class to represent a cellule on the map"""
+
+    x: float
+    y: float
+
+    def __mul__(self, scalar):
+        return Position(self.x * scalar, self.y * scalar, self.direction * scalar)
+
+    def __add__(self, other):
+        return Position(
+            self.x + other.x, self.y + other.y, self.direction + other.direction
+        )
+
+    def __sub__(self, other):
+        return Position(
+            self.x - other.x, self.y - other.y, self.direction - other.direction
+        )
+
+    def get_rhs(self,)
 
 class BasicRover:
     """Define class to represent a basic rover. It can move on its planet and get information from the landmarks"""
