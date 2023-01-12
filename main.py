@@ -85,7 +85,12 @@ class BasicRover:
     """Define class to represent a basic rover. It can move on its planet and get information from the landmarks"""
 
     def __init__(
-        self, position: Position, planet: Planet, planet_true: Planet, noise: Noise, max_range: float
+        self,
+        position: Position,
+        planet: Planet,
+        planet_true: Planet,
+        noise: Noise,
+        max_range: float,
     ):
         self.position_true: Position = position
         self.planet: Planet = planet
@@ -122,7 +127,6 @@ class BasicRover:
             if self.planet.maze[round(position.y)][round(next_pos.x)] == 1:
                 next_pos.x = position.x
 
-                            
         return next_pos
 
 
@@ -137,7 +141,11 @@ class RoverParticle(BasicRover):
 
     def __mul__(self, scalar):
         return RoverParticle(
-            self.position_true * scalar, self.planet, self.planet_true, self.noise, self.max_range
+            self.position_true * scalar,
+            self.planet,
+            self.planet_true,
+            self.noise,
+            self.max_range,
         )
 
     def __add__(self, other):
@@ -201,6 +209,7 @@ class Rover(BasicRover):
         self.goal = goal
 
         # Path Planning: A*
+        self.last_node = (0, 0)
         self.path = self.find_path((self.position_est.x, self.position_est.y), goal)
 
         # Sensing: RFID/LIDAR to determined landmarks ?
@@ -213,7 +222,9 @@ class Rover(BasicRover):
         # without causing too much troubles)
         self.particle_number = particle_number
         self.rover_particles: list[RoverParticle] = [
-            RoverParticle(position, planet, planet_true, Noise(1, 5.0, 5.0), self.max_range)
+            RoverParticle(
+                position, planet, planet_true, Noise(1, 5.0, 5.0), self.max_range
+            )
             for i in range(self.particle_number)
         ]
 
@@ -232,7 +243,6 @@ class Rover(BasicRover):
                 next_pos.x = self.position_true.x
 
             self.discover()
-        
 
         return next_pos
 
