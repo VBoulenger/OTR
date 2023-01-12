@@ -222,32 +222,38 @@ class Rover(BasicRover):
 
         # Check for collisions with walls in the actual planet
         if self.planet_true.maze[round(next_pos.y)][round(next_pos.x)] == 1:
-            
-            if self.planet.maze[round(next_pos.y)][round(position.x)] == 1:
-                self.position_true.y=round(self.position_true.y)
+
+            if self.planet_true.maze[round(next_pos.y)][round(position.x)] == 1:
+                self.position_true.y = round(self.position_true.y)
                 next_pos.y = self.position_true.y
-            
-            if self.planet.maze[round(position.y)][round(next_pos.x)] == 1:
-                self.position_true.x=round(self.position_true.x)
+
+            if self.planet_true.maze[round(position.y)][round(next_pos.x)] == 1:
+                self.position_true.x = round(self.position_true.x)
                 next_pos.x = self.position_true.x
-            
+
             self.discover()
+        
 
         return next_pos
-    
-    def discover(self):
-        """Scan area around the rover and compute its new path."""
-        
-	scan_lgth=4
-        x_min = max(round(self.position_true.x)-scan_lgth, 0)
-        x_max = min(round(self.position_true.x)+scan_lgth, 40)
-        y_min = max(round(self.position_true.y)-scan_lgth, 0)
-        y_max = min(round(self.position_true.y)+scan_lgth, 40)
 
-        self.planet.maze[y_min:y_max, x_min:x_max] = self.planet_true.maze[y_min:y_max, x_min:x_max]
-        
-        self.path=self.find_path((self.path[0][0],self.path[0][1]), self.goal)
-   
+    def discover(self):
+        """Scan the area around the rover and modify the path if new obstacle are detected."""
+
+        scan_lgth = 15
+        x_min = max(round(self.position_true.x) - scan_lgth, 0)
+        x_max = min(round(self.position_true.x) + scan_lgth, self.planet.size_x())
+        y_min = max(round(self.position_true.y) - scan_lgth, 0)
+        y_max = min(round(self.position_true.y) + scan_lgth, self.planet.size_y())
+
+        if (
+            self.planet.maze[y_min:y_max, x_min:x_max]
+            != self.planet_true.maze[y_min:y_max, x_min:x_max]
+        ).any():
+            self.planet.maze[y_min:y_max, x_min:x_max] = self.planet_true.maze[
+                y_min:y_max, x_min:x_max
+            ]
+            self.path = self.find_path((self.last_node), self.goal)
+
     def sense(self):
         """Get distance between the rover and the landmarks"""
         self.observations = []
@@ -377,6 +383,8 @@ class Rover(BasicRover):
         speed, rotation = self.calc_control()
         speed = min(speed, self.max_speed)  # Speed is capped before adding noise
 
+        self.discover()
+
         # Add noise
         if speed != 0:
             speed_noisy = speed + np.random.normal(0.0, self.noise.speed)
@@ -399,11 +407,12 @@ class Rover(BasicRover):
             self.path
             and (round(self.position_est.y), round(self.position_est.x)) == self.path[0]
         ):
+            self.last_node = self.path[0]
             self.path.pop(0)
 
 
 def animate(
-    i, rover, lists_pos, ax_plot, ax_scatter, landmarks_ray
+    i, rover, lists_pos, ax_plot, ax_scatter, landmarks_ray, img
 ):  # pylint: disable=too-many-locals, unused-argument
     """Animate function for matplotlib animation"""
     true_list, est_list = lists_pos
@@ -415,6 +424,8 @@ def animate(
 
     true_list.append(rover.position_true)
     est_list.append(rover.position_est)
+
+    img.set_array(rover.planet.maze - 0.5 * rover.planet_true.maze)
 
     true_path[0].set_data([pos.x for pos in true_list], [pos.y for pos in true_list])
     est_path[0].set_data([pos.x for pos in est_list], [pos.y for pos in est_list])
@@ -469,7 +480,7 @@ def main():  # pylint: disable=too-many-locals
     maze_true[maze_true != 0] = 1
     planet_true = Planet(maze_true, landmarks)
 
-    noise = Noise(0.5, 5.0, 0.5)
+    noise = Noise(0.1, 0.5, 0.1)
     final_pos = (planet.size_x() - 1, planet.size_y() - 1)
     rover = Rover(init_pos, final_pos, planet, planet_true, noise)
 
@@ -481,7 +492,7 @@ def main():  # pylint: disable=too-many-locals
     ax = fig.add_subplot(
         111, xlim=(0, planet.size_x() - 1), ylim=(0, planet.size_y() - 1)
     )
-    im=ax.imshow(maze - 0.5 * maze_true, cmap="gray_r")
+    img = ax.imshow(maze - 0.5 * maze_true, cmap="gray_r")
 
     # Trajectories
     true_path = ax.plot([], [], c="C0", alpha=0.6, label="True trajectory", zorder=1)
@@ -527,7 +538,7 @@ def main():  # pylint: disable=too-many-locals
             [true_path, est_path],
             ax_scatter,
             landmarks_ray,
-            im,
+            img,
         ),
     )
 
